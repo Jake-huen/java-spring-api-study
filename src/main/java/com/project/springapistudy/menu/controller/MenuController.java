@@ -1,6 +1,8 @@
 package com.project.springapistudy.menu.controller;
 
 import com.project.springapistudy.menu.dto.MenuDto;
+import com.project.springapistudy.menu.dto.MenuResponseDto;
+import com.project.springapistudy.menu.exception.ApiException;
 import com.project.springapistudy.menu.service.MenuService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -14,28 +16,28 @@ public class MenuController {
 
     private final MenuService menuService;
 
-    @GetMapping()
-    public MenuDto.Response getMenu(@RequestParam String menuName){
+    @GetMapping
+    public MenuResponseDto getMenu(@RequestParam String menuName) throws ApiException {
         return menuService.getMenu(menuName);
     }
 
-    @PostMapping()
-    public MenuDto.Response addMenu(@RequestBody MenuDto.Request request) {
+    @PostMapping
+    public MenuResponseDto addMenu(@RequestBody MenuDto.Request request) throws ApiException {
         return menuService.addMenu(request);
     }
 
     @GetMapping("/all")
-    public List<MenuDto.Response> getAllBullets(){
+    public List<MenuResponseDto> getAllBullets(){
         return menuService.getAllMenus();
     }
 
-    @PostMapping("/edit")
-    public MenuDto.Response editBullet(@RequestParam String menuName, @RequestBody MenuDto.Request request){
+    @PutMapping
+    public MenuResponseDto editBullet(@RequestParam String menuName, @RequestBody MenuDto.Request request) throws ApiException {
         return menuService.editMenu(menuName, request);
     }
 
-    @PostMapping("/delete")
-    public String deleteBullet(@RequestParam String menuName) {
+    @DeleteMapping
+    public String deleteBullet(@RequestParam String menuName) throws ApiException {
         return menuService.deleteMenu(menuName);
     }
 }

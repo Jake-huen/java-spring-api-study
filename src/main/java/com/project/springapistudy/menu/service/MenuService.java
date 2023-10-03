@@ -3,8 +3,13 @@ package com.project.springapistudy.menu.service;
 import com.project.springapistudy.menu.domain.Menu;
 import com.project.springapistudy.menu.domain.MenuRepository;
 import com.project.springapistudy.menu.dto.MenuDto;
+import com.project.springapistudy.menu.dto.MenuResponseDto;
+import com.project.springapistudy.menu.exception.ApiException;
+import com.project.springapistudy.menu.exception.Constants;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,49 +21,45 @@ public class MenuService {
 
     private final MenuRepository menuRepository;
 
-    public MenuDto.Response getMenu(String menuName) {
-        Optional<Menu> menuEntity = menuRepository.findByMenuName(menuName);
-        if (menuEntity.isPresent()) {
-            return MenuDto.entityToDto(menuEntity.get());
-        }
-        throw new RuntimeException("해당하는 메뉴가 존재하지 않습니다.");
+    public MenuResponseDto getMenu(String menuName) throws ApiException {
+        Menu menuEntity = menuRepository.findByMenuName(menuName).orElseThrow(()->
+                new ApiException(Constants.ExceptionClass.MENU, HttpStatus.BAD_REQUEST, "해당하는 메뉴가 존재하지 않습니다"));
+        return MenuResponseDto.entityToDto(menuEntity);
     }
 
-    public MenuDto.Response addMenu(MenuDto.Request request) {
-        if(menuRepository.findByMenuName(request.getMenuName()).isPresent()){
-            throw new RuntimeException("해당하는 메뉴가 이미 존재합니다");
+    public MenuResponseDto addMenu(MenuDto.Request request) throws ApiException {
+        Optional<Menu> byMenuName = menuRepository.findByMenuName(request.getMenuName());
+        if (byMenuName.isPresent()) {
+            throw new ApiException(Constants.ExceptionClass.MENU, HttpStatus.BAD_REQUEST, "해당하는 메뉴가 이미 존재합니다");
         }
         Menu menuEntity = Menu.builder()
                 .menuName(request.getMenuName())
                 .price(request.getPrice())
                 .build();
         menuRepository.save(menuEntity);
-        return MenuDto.entityToDto(menuEntity);
+        return MenuResponseDto.entityToDto(menuEntity);
     }
 
-    public List<MenuDto.Response> getAllMenus() {
+    public List<MenuResponseDto> getAllMenus() {
         return menuRepository.findAll()
                 .stream()
-                .map(menuEntity -> MenuDto.entityToDto(menuEntity))
+                .map(MenuResponseDto::entityToDto)
                 .collect(Collectors.toList());
     }
 
-    public MenuDto.Response editMenu(String menuName, MenuDto.Request request) {
-        Optional<Menu> byMenuNameEntity = menuRepository.findByMenuName(menuName);
-        if (byMenuNameEntity.isPresent()) {
-            byMenuNameEntity.get().update(request);
-            menuRepository.save(byMenuNameEntity.get());
-            return MenuDto.entityToDto(byMenuNameEntity.get());
-        }
-        throw new RuntimeException("해당하는 메뉴가 존재하지 않습니다");
+    @Transactional
+    public MenuResponseDto editMenu(String menuName, MenuDto.Request request) throws ApiException {
+        Menu byMenuNameEntity = menuRepository.findByMenuName(menuName).orElseThrow(() ->
+                new ApiException(Constants.ExceptionClass.MENU, HttpStatus.BAD_REQUEST, "해당하는 메뉴가 존재하지 않습니다"));
+        byMenuNameEntity.update(request);
+        return MenuResponseDto.entityToDto(byMenuNameEntity);
+
     }
 
-    public String deleteMenu(String menuName) {
-        Optional<Menu> byMenuNameEntity = menuRepository.findByMenuName(menuName);
-        if (byMenuNameEntity.isPresent()) {
-            menuRepository.delete(byMenuNameEntity.get());
-            return menuName + " 메뉴가 삭제되었습니다";
-        }
-        throw new RuntimeException("해당하는 메뉴가 존재하지 않습니다");
+    public String deleteMenu(String menuName) throws ApiException {
+        Menu byMenuNameEntity = menuRepository.findByMenuName(menuName).orElseThrow(()->
+                new ApiException(Constants.ExceptionClass.MENU, HttpStatus.BAD_REQUEST, "해당하는 메뉴가 존재하지 않습니다"));
+        menuRepository.delete(byMenuNameEntity);
+        return menuName + " 메뉴가 삭제되었습니다";
     }
 }
